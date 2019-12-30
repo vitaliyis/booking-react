@@ -36,3 +36,11 @@
     transform: rotate(360deg);
   }
 }
+
+.hotel-title {
+  width: 110px;
+}
+
+.weather-title{
+  width: 90px;
+}
