@@ -1,0 +1,3 @@
+export const UPDATE_CITY = "UPDATE_CITY"
+export const UPDATE_START_END_DATE = "UPDATE_START_END_DATE"
+export const UPDATE_ERROR = "UPDATE_ERROR"

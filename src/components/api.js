@@ -50,10 +50,10 @@ export const fetchApiWeather = (city) => {
     })
     .then(data => {
       return {
-        temp: data.main.temp,
-        feels_like: data.main.feels_like,
-        wind: data.wind.speed,
-        precipitation: data.weather[0].main
+        temp: data.main ? data.main.temp : 'no data',
+        feels_like: data.main ? data.main.feels_like : 'no data',
+        wind: data.main ? data.wind.speed : 'no data',
+        precipitation: data.main ? data.weather[0].main : 'no data'
       }
     })
 }

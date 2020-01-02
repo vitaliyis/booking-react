@@ -1,21 +1,25 @@
 import React from 'react';
 import HotelsList from "./HotelsList";
-import {fetchApiHotel, fetchApiWeather} from "./api";
+import {setCity, setError, setStartEndDate} from "../redux/inputs/inputs.actions";
+import {connect} from "react-redux"
+import {
+  setHotels, setIsLoading, setWeather,
+  getHotelsWeather
+} from "../redux/data-from-server/data.actions";
 
 class SearchForm extends React.Component {
 
-  state = {
-    startDate: '',
-    endDate: '',
-    city: '',
-    hotels: [],
-    isLoading: false,
-    weather: {},
-    errorCity: '',
-    errorStart: false,
-    errorEnd: false
-
-  }
+  // state = {
+  //   startDate: '',
+  //   endDate: '',
+  //   city: '',
+  //   hotels: [],
+  //   isLoading: false,
+  //   weather: {},
+  //   errorCity: '',
+  //   errorStart: false,
+  //   errorEnd: false
+  // }
 
   onChange = (event) => {
     const name = event.target.name
@@ -28,67 +32,30 @@ class SearchForm extends React.Component {
       setError = 'errorEnd'
     }
 
-    this.setState({
-      [name]: value,
-      [setError]: false
-    })
+    this.props.setStartEndDate({[name]: value})
+    this.props.setError({[setError]: false})
   }
 
   onChangeCity = (e) => {
-    this.setState({
-      city: e.target.value,
-      errorCity: ''
-    })
+    this.props.setCity(e.target.value)
+    this.props.setError({errorCity: ''})
+
   }
 
   onSubmit = (e) => {
     e.preventDefault();
-
-
-    if (this.state.city && this.state.startDate && this.state.endDate) {
-
-      this.setState({
-        isLoading: true,
-        hotels: [],
-        weather: {}
-      })
-
-      fetchApiHotel(this.state.city, this.state.startDate, this.state.endDate)
-        .then(data => {
-          if (data.message) {
-            this.setState({
-              errorCity: data.message,
-              isLoading: false
-            })
-          } else {
-            this.setState({
-              hotels: data,
-              isLoading: false
-            })
-            fetchApiWeather(this.state.city)
-              .then(data => {
-                this.setState({
-                  weather: data
-                })
-              })
-          }
-
-        })
+    const {city, startDate, endDate, setIsLoading, setHotels, setWeather, setError, getHotelsWeather} = this.props
+    if (city && startDate && endDate) {
+      setIsLoading(true)
+      setHotels([])
+      setWeather({})
+      getHotelsWeather(city, startDate, endDate)
     } else {
-      this.setState({
-        errorCity: !Boolean(this.state.city),
-        errorStart: !Boolean(this.state.startDate),
-        errorEnd: !Boolean(this.state.endDate)
-      })
+      setError({errorCity: !Boolean(city)})
+      setError({errorStart: !Boolean(startDate)})
+      setError({errorEnd: !Boolean(endDate)})
     }
 
-
-    // fetchApiWeather(this.state.city)
-    //   .then(data => {
-    //     this.setState({
-    //       weather: data
-    //     })
-    //   })
   }
 
   getCurrentDate = () => {
@@ -96,11 +63,13 @@ class SearchForm extends React.Component {
     let curr_date = d.getDate();
     let curr_month = d.getMonth() + 1;
     let curr_year = d.getFullYear();
+
+    if (curr_date < 9) curr_date = `0${curr_date}`
+    if (curr_month < 9) curr_month = `0${curr_month}`
+
     let str = curr_year + '-' + curr_month + "-" + curr_date
 
-    this.setState({
-      startDate: str
-    })
+    this.props.setStartEndDate({startDate: str})
   }
 
   componentDidMount() {
@@ -108,42 +77,55 @@ class SearchForm extends React.Component {
   }
 
   render() {
+    console.log('this.props =>>>> ', this.props)
+    const {
+            startDate,
+            endDate,
+            city,
+            hotels,
+            isLoading,
+            weather,
+            errorCity,
+            errorStart,
+            errorEnd
+    } = this.props
     return (
       <>
           <form>
             <div className="form-row">
               <div className="col-4 text-left">
                 <input type="text"
-                       className={`form-control ${this.state.errorCity ? "is-invalid" : null}`}
+                       className={`form-control ${errorCity ? "is-invalid" : null}`}
                        placeholder="City"
                        onChange={this.onChangeCity}
-                       value={this.state.city}
+                       value={city}
                 />
-                {this.state.errorCity
-                  ? <div className="invalid-feedback">{typeof this.state.errorCity === "boolean" ? 'required city' : this.state.errorCity}</div>
+                {errorCity
+                  ? <div className="invalid-feedback">{typeof errorCity === "boolean" ? 'required city' : errorCity}</div>
                   : null
                 }
 
               </div>
               <div className="col-3 text-left">
                 <input type="date"
-                       className={`form-control ${this.state.errorStart ? "is-invalid" : null} `}
+                       className={`form-control ${errorStart ? "is-invalid" : null} `}
                        onChange={this.onChange}
-                       value={this.state.startDate}
+                       value={startDate}
                        name="startDate"
                 />
-                {this.state.errorStart
+                {errorStart
                   ? <div className="invalid-feedback">Required date</div>
                   : null
                 }
               </div>
               <div className="col-3 text-left">
                 <input type="date"
-                       className={`form-control ${this.state.errorEnd ? "is-invalid" : null} `}
+                       className={`form-control ${errorEnd ? "is-invalid" : null} `}
                        onChange={this.onChange}
+                       value={endDate}
                        name="endDate"
                 />
-                {this.state.errorEnd
+                {errorEnd
                   ? <div className="invalid-feedback">Required date</div>
                   : null
                 }
@@ -158,14 +140,72 @@ class SearchForm extends React.Component {
             </div>
           </form>
           <HotelsList
-            hotels={this.state.hotels}
-            isLoading={this.state.isLoading}
-            weather={this.state.weather}
-            messageError={this.state.messageError}
+            hotels={hotels}
+            isLoading={isLoading}
+            weather={weather}
           />
       </>
     )
   }
 }
 
-export default SearchForm
+// state - здесь будет store.getState()
+const mapStateToProps = (state) => {
+  return {
+    startDate: state.inputsReducer.startDate,
+    endDate: state.inputsReducer.endDate,
+    city: state.inputsReducer.city,
+    errorCity: state.inputsReducer.errorCity,
+    errorStart: state.inputsReducer.errorStart,
+    errorEnd: state.inputsReducer.errorEnd,
+
+    hotels: state.dataFromServerReducer.hotels,
+    isLoading: state.dataFromServerReducer.isLoading,
+    weather: state.dataFromServerReducer.weather
+  }
+}
+
+const mapDispatchToProps = {
+  setStartEndDate,
+  setCity,
+  setError,
+  setHotels,
+  setIsLoading,
+  setWeather,
+  getHotelsWeather
+}
+
+// const mapDispatchToProps = (dispatch) => {
+//   return {
+  //   setStartEndDate: (date, value) => dispatch(actionCreatorStartEndDate({
+  //     [date]: value,
+  //   })),
+  //   setCity: (city) => dispatch(actionCreatorCity({
+  //     city
+  //   })),
+  //   setError: (error, value) => dispatch(actionCreatorError({
+  //     [error]: value
+  // })),
+  //   setHotels: (value) => dispatch(actionCreatorHotels({
+  //     hotels: value
+  //   })),
+  //   setIsLoading: (value) => dispatch(actionCreatorLoading({
+  //     isLoading: value
+  //   })),
+  //   setWeather: (value) => dispatch(actionCreatorWeather({
+  //     weather: value
+  //   })),
+  //   getHotelsWeather: (city, startDate, endDate) => dispatch(getHotelsWeather(city, startDate, endDate))
+
+    // setStartEndDate: bindActionCreators(setStartEndDate, dispatch),
+    // setCity: bindActionCreators(setCity, dispatch),
+    // setError: bindActionCreators(setError, dispatch),
+    // setHotels: bindActionCreators(setHotels, dispatch),
+    // setIsLoading: bindActionCreators(setIsLoading, dispatch),
+    // setWeather: bindActionCreators(setWeather, dispatch),
+    // getHotelsWeather: bindActionCreators(getHotelsWeather, dispatch),
+
+//   }
+// }
+
+export default connect(mapStateToProps, mapDispatchToProps)(SearchForm)
